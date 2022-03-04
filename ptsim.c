@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "ptsim.h"
 
-#define MEM_SIZE 16384  // MUST equal PAGE_SIZE * PAGE_COUNT
-#define PAGE_SIZE 256  // MUST equal 2^PAGE_SHIFT
-#define PAGE_COUNT 64
-#define PAGE_SHIFT 8  // Shift page number this much
-
+unsigned char get_page_table(int proc_num) {
+    (void)proc_num;
+    char x = 'a';
+    return x;
+}
 // Simulated RAM
 unsigned char mem[MEM_SIZE];
 
@@ -34,7 +31,9 @@ void initialize_mem(void)
 //
 unsigned char get_page(void)
 {
+    char x = 'a';
     // TODO
+    return x;
 }
 
 //
@@ -45,6 +44,8 @@ unsigned char get_page(void)
 void new_process(int proc_num, int page_count)
 {
     // TODO
+    (void)proc_num;
+    (void)page_count;
 }
 
 //
