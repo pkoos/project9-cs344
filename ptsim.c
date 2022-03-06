@@ -4,10 +4,32 @@
 unsigned char mem[MEM_SIZE];
 int printControl = 1;
 
+int isPageTableFull(int addr, int proc) {
+    int full = 0;
+    if(addr == 0xff) {
+        printf("OOM: proc %d: page table\n", proc);
+        full = 1;
+    }
+    return full;
+}
+
 unsigned char get_page_table(int proc_num) {
     (void)proc_num;
     char x = 'a';
     return x;
+}
+
+int getFreeBit(int address) {
+    return get_address(0, address);
+}
+
+int getPageTableAddress(int proc_num) {
+    return get_address(0, PAGE_COUNT + proc_num);
+}
+
+int getProcessPageTable(int proc_num) {
+    printf("getProcessPageTable: %d\n", mem[getPageTableAddress(proc_num)]);
+    return mem[getPageTableAddress(proc_num)];
 }
 
 /*
@@ -25,8 +47,11 @@ int get_address(int page, int offset)
 */
 void initialize_mem(void)
 {
-    mem[get_address(0, 0)] = 1;
-    mem[get_address(0,PAGE_COUNT)] = 0;
+    for(int i = 0;i<MEM_SIZE;i++) {
+        mem[i] = 0;
+    }
+    mem[getFreeBit(0)] = 1;
+    mem[getPageTableAddress(0)] = 0;
 }
 
 /*
@@ -36,9 +61,14 @@ void initialize_mem(void)
 */
 unsigned char get_page(void)
 {
-    char x = 'a';
-    // TODO
-    return x;
+    int page = 0xff;
+    for(int i=1;i<PAGE_COUNT;i++) {
+        if(!mem[i]) {
+            mem[i] = 1; page = i; break;
+        }
+    }
+    printf("get_page: %d\n", page);
+    return page;
 }
 
 /*
@@ -48,9 +78,18 @@ unsigned char get_page(void)
 */
 void new_process(int proc_num, int page_count)
 {
-    // TODO
-    (void)proc_num;
-    (void)page_count;
+    int page_addr = get_page();
+    if (isPageTableFull(page_addr, proc_num)) return;
+
+    mem[getPageTableAddress(proc_num)] = page_addr;
+    printf("proc%d page table address: %d\n", proc_num, mem[getPageTableAddress(proc_num)]);
+    for(int i=0;i<page_count;i++) {
+        page_addr = get_page();
+        if (isPageTableFull(page_addr, proc_num)) return;
+        mem[get_address(mem[getPageTableAddress(proc_num)], i)] = page_addr;
+        printf("proc%d page table address: %d\n", proc_num, mem[getPageTableAddress(proc_num)]);
+
+    }
 }
 
 /*
