@@ -1,8 +1,8 @@
 #include "ptsim.h"
 
-
 // Simulated RAM
 unsigned char mem[MEM_SIZE];
+int printControl = 1;
 
 unsigned char get_page_table(int proc_num) {
     (void)proc_num;
@@ -15,6 +15,8 @@ unsigned char get_page_table(int proc_num) {
 */
 int get_address(int page, int offset)
 {
+    if(printControl) printf("Address: %d page: %d offset: %d\n", (page << PAGE_SHIFT) | offset, page, offset);
+
     return (page << PAGE_SHIFT) | offset;
 }
 
@@ -23,8 +25,8 @@ int get_address(int page, int offset)
 */
 void initialize_mem(void)
 {
-    mem[PAGE_SIZE*0] = 1;
-    mem[PAGE_SIZE*1] = 1;
+    mem[get_address(0, 0)] = 1;
+    mem[get_address(0,PAGE_COUNT)] = 0;
 }
 
 /*
@@ -56,7 +58,7 @@ void new_process(int proc_num, int page_count)
 */
 void print_page_free_map(void)
 {
-    printf("--- PAGE FREE MAP ---\n");
+    printControl = 0;
 
     for (int i = 0; i < 64; i++) {
         int addr = get_address(0, i);
@@ -66,6 +68,7 @@ void print_page_free_map(void)
         if ((i + 1) % 16 == 0)
             putchar('\n');
     }
+    printControl = 1;
 }
 
 /*
@@ -74,7 +77,7 @@ void print_page_free_map(void)
 void print_page_table(int proc_num)
 {
     printf("--- PROCESS %d PAGE TABLE ---\n", proc_num);
-
+    printControl = 0;
     // Get the page table for this process
     int page_table = get_page_table(proc_num);
 
@@ -88,6 +91,7 @@ void print_page_table(int proc_num)
             printf("%02x -> %02x\n", i, page);
         }
     }
+    printControl = 1;
 }
 
 int main(int argc, char *argv[])
