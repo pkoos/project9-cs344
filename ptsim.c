@@ -1,12 +1,14 @@
 #include "ptsim.h"
 
+
+// Simulated RAM
+unsigned char mem[MEM_SIZE];
+
 unsigned char get_page_table(int proc_num) {
     (void)proc_num;
     char x = 'a';
     return x;
 }
-// Simulated RAM
-unsigned char mem[MEM_SIZE];
 
 /*
     Convert a page, offset into an address
@@ -21,7 +23,8 @@ int get_address(int page, int offset)
 */
 void initialize_mem(void)
 {
-    // TODO
+    mem[PAGE_SIZE*0] = 1;
+    mem[PAGE_SIZE*1] = 1;
 }
 
 /*
@@ -92,7 +95,7 @@ int main(int argc, char *argv[])
     assert(PAGE_COUNT * PAGE_SIZE == MEM_SIZE);
 
     if (argc == 1) {
-        fprintf(stderr, "usage: ptsim commands\n");
+        fprintf(stderr, "usage: ptsim commands\n[np] proc_num page_count\n[pfm]\n[ppt]\n");
         return 1;
     }
     
