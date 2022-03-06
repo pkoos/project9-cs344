@@ -4,6 +4,19 @@
 unsigned char mem[MEM_SIZE];
 int printControl = 1;
 
+int verifyProcAndPage(int proc_num, int page_count) {
+    int error = 1;
+    if(!(proc_num < PAGE_COUNT && proc_num > 0)) {
+        printf("Requested process %d is not valid. [1-64]\n", proc_num);
+        error = 0;
+    }
+    if(!(page_count < PAGE_COUNT && page_count > 0)) {
+        printf("Requested %d pages is not valid. [1-64]\n", page_count);
+        error = 0;
+    }
+    return error;
+}
+
 int isPageTableFull(int addr, int proc) {
     int full = 0;
     if(addr == 0xff) {
@@ -13,23 +26,16 @@ int isPageTableFull(int addr, int proc) {
     return full;
 }
 
-unsigned char get_page_table(int proc_num) {
-    (void)proc_num;
-    char x = 'a';
-    return x;
-}
-
-int getFreeBit(int address) {
-    return get_address(0, address);
-}
-
-int getPageTableAddress(int proc_num) {
+int pageTableAddress(int proc_num) {
     return get_address(0, PAGE_COUNT + proc_num);
 }
 
-int getProcessPageTable(int proc_num) {
-    printf("getProcessPageTable: %d\n", mem[getPageTableAddress(proc_num)]);
-    return mem[getPageTableAddress(proc_num)];
+unsigned char get_page_table(int proc_num) {
+    return mem[pageTableAddress(proc_num)];
+}
+
+int freeBit(int address) {
+    return get_address(0, address);
 }
 
 /*
@@ -37,8 +43,6 @@ int getProcessPageTable(int proc_num) {
 */
 int get_address(int page, int offset)
 {
-    if(printControl) printf("Address: %d page: %d offset: %d\n", (page << PAGE_SHIFT) | offset, page, offset);
-
     return (page << PAGE_SHIFT) | offset;
 }
 
@@ -50,8 +54,8 @@ void initialize_mem(void)
     for(int i = 0;i<MEM_SIZE;i++) {
         mem[i] = 0;
     }
-    mem[getFreeBit(0)] = 1;
-    mem[getPageTableAddress(0)] = 0;
+    mem[freeBit(0)] = 1;
+    mem[pageTableAddress(0)] = 0;
 }
 
 /*
@@ -64,10 +68,9 @@ unsigned char get_page(void)
     int page = 0xff;
     for(int i=1;i<PAGE_COUNT;i++) {
         if(!mem[i]) {
-            mem[i] = 1; page = i; break;
+            mem[freeBit(i)] = 1; page = i; break;
         }
     }
-    printf("get_page: %d\n", page);
     return page;
 }
 
@@ -78,16 +81,19 @@ unsigned char get_page(void)
 */
 void new_process(int proc_num, int page_count)
 {
+    if (!verifyProcAndPage(proc_num, page_count)) {
+        return;
+    }
+
     int page_addr = get_page();
     if (isPageTableFull(page_addr, proc_num)) return;
 
-    mem[getPageTableAddress(proc_num)] = page_addr;
-    printf("proc%d page table address: %d\n", proc_num, mem[getPageTableAddress(proc_num)]);
+    mem[pageTableAddress(proc_num)] = page_addr;
+    
     for(int i=0;i<page_count;i++) {
         page_addr = get_page();
         if (isPageTableFull(page_addr, proc_num)) return;
-        mem[get_address(mem[getPageTableAddress(proc_num)], i)] = page_addr;
-        printf("proc%d page table address: %d\n", proc_num, mem[getPageTableAddress(proc_num)]);
+        mem[get_address(mem[pageTableAddress(proc_num)], i)] = page_addr;
 
     }
 }
