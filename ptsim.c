@@ -4,6 +4,21 @@
 unsigned char mem[MEM_SIZE];
 int printControl = 1;
 
+void loadValue(int proc_num, int virt_addr) {
+    (void)proc_num; 
+    (void)virt_addr;
+}
+
+void storeValue(int proc_num, int virt_addr, int value) {
+    (void)proc_num;
+    (void)virt_addr;
+    (void)value;
+}
+
+void killProcess(int proc_num) {
+    (void)proc_num;
+}
+
 int verifyProcAndPage(int proc_num, int page_count) {
     int error = 1;
     if(!(proc_num < PAGE_COUNT && proc_num > 0)) {
@@ -144,7 +159,7 @@ int main(int argc, char *argv[])
     assert(PAGE_COUNT * PAGE_SIZE == MEM_SIZE);
 
     if (argc == 1) {
-        fprintf(stderr, "usage: ptsim commands\n[np] proc_num page_count\n[pfm]\n[ppt]\n");
+        fprintf(stderr, "usage: ptsim commands\n -> [np] proc_num req_pages\n -> [pfm]\n -> [ppt]\n -> [kp] proc_num\n -> [st] proc_num virt_addr value\n -> [lb] proc_num virt_addr\n");
         return 1;
     }
     
@@ -162,6 +177,21 @@ int main(int argc, char *argv[])
         else if (strcmp(argv[i], "ppt") == 0) {
             int proc_num = atoi(argv[++i]);
             print_page_table(proc_num);
+        }
+        else if (strcmp(argv[i], "kp") == 0) {
+            int proc_num = atoi(argv[++i]);
+            killProcess(proc_num);
+        }
+        else if (strcmp(argv[i], "st") == 0) {
+            int proc_num = atoi(argv[++i]);
+            int virt_addr = atoi(argv[++i]);
+            int value = atoi(argv[++i]);
+            storeValue(proc_num, virt_addr, value);
+        }
+        else if (strcmp(argv[i], "lb") == 0) {
+            int proc_num = atoi(argv[++i]);
+            int virt_addr = atoi(argv[++i]);
+            loadValue(proc_num, virt_addr);
         }
     }
 }

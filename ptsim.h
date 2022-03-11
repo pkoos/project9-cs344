@@ -8,7 +8,14 @@
 #define PAGE_COUNT 64
 #define PAGE_SHIFT 8  // Shift page number this much
 
+void loadValue(int, int);
+void storeValue(int, int, int);
+void killProcess(int);
+int verifyAndProcPage(int, int);
+int isPageTableFull(int, int);
+int pageTableAddress(int);
 unsigned char get_page_table(int);
+int freeBit(int);
 int get_address(int, int);
 void initialize_mem(void);
 unsigned char get_page(void);
