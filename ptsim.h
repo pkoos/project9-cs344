@@ -9,20 +9,25 @@
 #define PAGE_SHIFT 8  // Shift page number this much
 #define MAX_ASSIGNABLE_VALUE 255 // This is the highest number we can store in our memory slots.
 
+int translateToPhysicalPage(int, int);
+int translateToPhysicalAddress(int, int);
+int getVirtualPageNumber(int);
+int getVirtualOffset(int);
 int getPhysicalAddress(unsigned char, unsigned char);
+void deallocatePage(int);
 unsigned char getValue(int);
 unsigned char freeBit(int);
 unsigned char pageTableAddress(unsigned char);
-int pageAddress(unsigned char page);
-unsigned char processPageTable(unsigned char procNum);
+int pageAddress(unsigned char);
+unsigned char processPageTable(unsigned char);
 void assignPhysicalMemory(int, int);
 void loadValue(int, int);
 void storeValue(int, int, int);
 void killProcess(int);
 int verifyProcAndPage(int, int);
-unsigned char get_page_table(int);
+int isPageTableFull(int, int);
 void initializeMem(void);
 unsigned char getVirtualPage(void);
 void newProcess(int, int);
-void view_page_table(int);
-void print_page_free_map(void);
+void printPageTable(int);
+void printPageFreeMap(void);
