@@ -17,6 +17,12 @@ int getPhysicalAddress(unsigned char page, unsigned char offset)
     return (page << PAGE_SHIFT) | offset;
 }
 
+
+void deallocatePage(int page) {
+    assert(page < PAGE_COUNT && page >= 0);
+    assignPhysicalMemory(page, 0);
+
+}
 /*
 	Input: A physical address.
 	Output: The value assigned to the physical address.
@@ -98,12 +104,12 @@ void killProcess(int procNum) {
     int pptAddr = pageAddress(ppt); // physical address for process page table (proc_num * 256)
     unsigned char addrValue;
     while ((addrValue = getValue(pptAddr++)) != 0) {
-        printf("addrValue: %d\n", addrValue);
+        // printf("addrValue: %d\n", addrValue);
         pages[numPages++] = addrValue;
     }
     for(int i= 0;i< numPages;i++) {
         assignPhysicalMemory(freeBit(pages[i]), 0);
-        printf("pages[%d]: %d\n", i, pages[i]);
+        // printf("pages[%d]: %d\n", i, pages[i]);
     }
     (void)pages;
 }
@@ -182,7 +188,7 @@ void newProcess(int procNum, int pageCount)
 /*
     Print the address map from virtual pages to physical
 */
-void print_page_table(int procNum)
+void printPageTable(int procNum)
 {
     printf("--- PROCESS %d PAGE TABLE ---\n", procNum);
     // Get the page table for this process
@@ -202,7 +208,7 @@ void print_page_table(int procNum)
 /*
     Print the free page map
 */
-void print_page_free_map(void)
+void printPageFreeMap(void)
 {
     for (int i = 0; i < 64; i++) {
         int addr = getPhysicalAddress(0, i);
@@ -234,11 +240,11 @@ int main(int argc, char *argv[])
             newProcess(procNum, pages);
         }
         else if (strcmp(argv[i], "pfm") == 0) {
-            print_page_free_map();
+            printPageFreeMap();
         }
         else if (strcmp(argv[i], "ppt") == 0) {
             int procNum = atoi(argv[++i]);
-            print_page_table(procNum);
+            printPageTable(procNum);
         }
         else if (strcmp(argv[i], "kp") == 0) {
             int procNum = atoi(argv[++i]);
