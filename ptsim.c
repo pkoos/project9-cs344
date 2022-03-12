@@ -105,6 +105,9 @@ void killProcess(int procNum) {
     }
     for(int i= 0;i< numPages;i++) {
         deallocatePage(freeBit(pages[i]));
+        if (i+1 < numPages) {// this will deallocate the process page table
+            assignMemory(pageAddress(ppt) + i, 0);
+        }
     }
     (void)pages;
 }
@@ -180,6 +183,7 @@ void printPageTable(int procNum) {
 }
 
 void printPageFreeMap(void) {
+    printf("--- PAGE FREE MAP ---\n");
     for (int i = 0; i < PAGE_COUNT; i++) {
         int addr = getPhysicalAddress(0, i);
 
