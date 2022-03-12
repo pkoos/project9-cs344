@@ -1,7 +1,5 @@
 #include "ptsim.h"
 
-#define RUN_PROGRAM 1
-
 // Simulated RAM
 unsigned char mem[MEM_SIZE];
 
@@ -228,7 +226,7 @@ void print_page_free_map(void)
 int main(int argc, char *argv[])
 {
     assert(PAGE_COUNT * PAGE_SIZE == MEM_SIZE);
-#if RUN_PROGRAM
+#ifndef TEST
     if (argc == 1) {
         fprintf(stderr, "usage: ptsim commands\n -> [np] procNum req_pages\n -> [pfm]\n -> [ppt]\n -> [kp] procNum\n -> [st] procNum virt_addr value\n -> [lb] procNum virt_addr\n");
         return 1;
