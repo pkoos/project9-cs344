@@ -2,7 +2,7 @@
 
 // Simulated RAM
 unsigned char mem[MEM_SIZE];
-
+unsigned char pt[PAGE_SIZE];
 
 /* 
     Input:
@@ -89,18 +89,23 @@ void storeValue(int procNum, int virt_addr, int value) {
 }
 
 void killProcess(int procNum) {
+    // get the process page table address
+    unsigned char pages[PAGE_COUNT] = {0};
+    unsigned char numPages = 0;
+    unsigned char ppt = processPageTable(procNum);
 
-    int ptAddress = processPageTable(procNum);
-    (void)ptAddress;
-    // printf("ptAddress: %d\n", ptAddress);
-    // int pageTableAddr = get_page_table(procNum);
-    // int procPageTable = processPageTable(procNum);
-    // mem[freeBit(pageTableAddr)] = 0;
-    // int procPageAddr;
-    // while ((procPageAddr = mem[procPageTable++]) != 0) {
-    //     mem[procPageAddr] = 0;
-    // }
-    // mem[pageTableAddress(procNum)] = 0;
+    pages[numPages++] = ppt; // page table for the listed process
+    int pptAddr = pageAddress(ppt); // physical address for process page table (proc_num * 256)
+    unsigned char addrValue;
+    while ((addrValue = getValue(pptAddr++)) != 0) {
+        printf("addrValue: %d\n", addrValue);
+        pages[numPages++] = addrValue;
+    }
+    for(int i= 0;i< numPages;i++) {
+        assignPhysicalMemory(freeBit(pages[i]), 0);
+        printf("pages[%d]: %d\n", i, pages[i]);
+    }
+    (void)pages;
 }
 
 int verifyProcAndPage(int procNum, int pageCount) {
