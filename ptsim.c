@@ -14,7 +14,6 @@ unsigned char mem[MEM_SIZE];
 */
 int getPhysicalAddress(unsigned char page, unsigned char offset)
 {
-    // printf("page: %d offset: %d getPhysicalAddress: %d\n",page, offset, (page << PAGE_SHIFT) | offset);
     return (page << PAGE_SHIFT) | offset;
 }
 
@@ -92,7 +91,8 @@ void storeValue(int procNum, int virt_addr, int value) {
 void killProcess(int procNum) {
 
     int ptAddress = processPageTable(procNum);
-    printf("ptAddress: %d\n", ptAddress);
+    (void)ptAddress;
+    // printf("ptAddress: %d\n", ptAddress);
     // int pageTableAddr = get_page_table(procNum);
     // int procPageTable = processPageTable(procNum);
     // mem[freeBit(pageTableAddr)] = 0;
@@ -123,15 +123,6 @@ int isPageTableFull(int addr, int proc) {
         full = 1;
     }
     return full;
-}
-
-// int pageTableAddress(int procNum) {
-//     return getPhysicalAddress(0, pageCount + procNum);
-// }
-
-unsigned char get_page_table(int procNum) {
-    printf("procNum: %d address: %d value: %d\n", procNum, pageTableAddress(procNum), mem[pageTableAddress(procNum)]);
-    return mem[pageTableAddress(procNum)];
 }
 
 /*
@@ -173,7 +164,6 @@ void newProcess(int procNum, int pageCount)
     }
 
     int pageAddr = getVirtualPage();
-    printf("proc: %d page table: %d\n", procNum, pageTableAddress(procNum));
     if (isPageTableFull(pageAddr, procNum)) return;
     assignPhysicalMemory(pageTableAddress(procNum), pageAddr);
     
@@ -181,7 +171,6 @@ void newProcess(int procNum, int pageCount)
         int newPage = getVirtualPage();
         if (isPageTableFull(newPage, procNum)) return;
         assignPhysicalMemory(pageAddress(pageAddr)+i ,newPage);
-        printf("%d: pageAddr: %d value: %d\n",i, pageAddress(pageAddr)+ i, mem[pageAddress(pageAddr)+i]);
     }
 }
 
@@ -192,13 +181,12 @@ void print_page_table(int procNum)
 {
     printf("--- PROCESS %d PAGE TABLE ---\n", procNum);
     // Get the page table for this process
-    int page_table = get_page_table(procNum);
+    unsigned char page_table = processPageTable(procNum);
     // Loop through, printing out used pointers
     for (int i = 0; i < PAGE_COUNT; i++) {
         int addr = getPhysicalAddress(page_table, i);
         
-        int page = mem[addr];
-        printf("addr: %d page: %d\n", addr, page);
+        int page = getValue(addr);
 
         if (page != 0) {
             printf("%02x -> %02x\n", i, page);
