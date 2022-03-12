@@ -1,126 +1,121 @@
 #include "ptsim.h"
 
-// Simulated RAM
-unsigned char mem[MEM_SIZE];
-unsigned char pt[PAGE_SIZE];
+int mem[MEM_SIZE];
 
-/* 
-    Input:
-    page: The virtual page number.
-    offset: The virtual address on said page number.
+int pptPage(int procNum) {
+    assert(procNum < PAGE_COUNT);
+    
+    return mem[pageTableAddress(procNum)];
+}
 
-    Out:
-    A physical address calculated from page and offset.
-*/
-int getPhysicalAddress(unsigned char page, unsigned char offset)
+int getVirtualOffsetAddress(int virtAddr) {
+    assert(virtAddr < MEM_SIZE);
+    
+    return virtAddr & 255;
+}
+
+int getVirtualPageNumber(int virtAddr) {
+    return virtAddr >> 8;
+}
+
+int translateToPhysicalPage(int procNum, int vPage) {
+    assert(procNum < PAGE_COUNT && vPage < PAGE_COUNT);
+
+    int ppt = pptPage(procNum);
+    int vPageAddr = pageAddress(ppt) + vPage;
+    int ppg = getValue(vPageAddr);
+
+    return ppg;
+}
+
+int translateToPhysicalAddress(int procNum, int virtAddr) {
+    int vPage = getVirtualPageNumber(virtAddr);
+    int vOffset = getVirtualOffsetAddress(virtAddr);
+    int physicalPage = translateToPhysicalPage(procNum, vPage);
+    int physicalAddress = getPhysicalAddress(physicalPage, vOffset);
+
+    return physicalAddress;
+}
+
+int getPhysicalAddress(int page, int offset)
 {
     return (page << PAGE_SHIFT) | offset;
 }
 
-
 void deallocatePage(int page) {
     assert(page < PAGE_COUNT && page >= 0);
-    assignPhysicalMemory(page, 0);
+    assignMemory(page, 0);
 
 }
-/*
-	Input: A physical address.
-	Output: The value assigned to the physical address.
-*/
-unsigned char getValue(int address) {
-		assert(address < MEM_SIZE && address > 0);
+
+int getValue(int address) {
+		assert(address < MEM_SIZE);
+        assert(address > 0);
 		return mem[address];
 }
 
-/*
-    Input: A physical address between 0-63.
-    Output: The physical address passed in.
-*/
-unsigned char freeBit(int address) {
-    
-    assert(address < PAGE_COUNT && address >= 0);
+int freeBit(int address) {
+    assert(address < PAGE_COUNT);
+
     return getPhysicalAddress(0, address);
 }
-/*
-    Input: A process number, validated to be between 0 - 63.
-    Output: The page table address 
-*/
-unsigned char pageTableAddress(unsigned char procNum) {
+
+int pageTableAddress(int procNum) {
     
     assert(procNum < PAGE_COUNT);
     return getPhysicalAddress(0, PAGE_COUNT + procNum);
 }
 
-int pageAddress(unsigned char page) {
+int pageAddress(int page) {
     
     assert(page < PAGE_COUNT);
     return getPhysicalAddress(page, 0);
 }
 
-/*
-    Input:
-    A process number for the page table address you're looking up.
-
-    Output: The address of the process number's page table.
-*/
-unsigned char processPageTable(unsigned char procNum) {
-    
-    assert(procNum < PAGE_COUNT);
-    return mem[pageTableAddress(procNum)];
-}
-
-/*
-    Input: 
-    Address: a physical memory address.
-    Value: A value you want to assign to memory.
-
-    Validates memory address and value, and assigns the value
-    in the memory address.
-*/
-void assignPhysicalMemory(int address, int value) {
+void assignMemory(int address, int value) {
     assert(address < MEM_SIZE && address >= 0);
     assert(value < MAX_ASSIGNABLE_VALUE && value >= 0);
     mem[address] = value;
 }
 
-void loadValue(int procNum, int virt_addr) {
-    (void)procNum; 
-    (void)virt_addr;
+void loadValue(int procNum, int virtAddr) {
+    int physicalAddress = translateToPhysicalAddress(procNum, virtAddr);
+
+    printf("Load proc %d: %d => %d, value=%d\n", procNum, virtAddr, physicalAddress, getValue(physicalAddress));
 }
 
-void storeValue(int procNum, int virt_addr, int value) {
-    (void)procNum;
-    (void)virt_addr;
-    (void)value;
+void storeValue(int procNum, int virtAddr, int value) {
+    int physicalAddress = translateToPhysicalAddress(procNum, virtAddr);
+    assignMemory(physicalAddress, value);
+
+    printf("Store proc %d: %d => %d, value=%d\n", procNum, virtAddr, physicalAddress, value);
 }
 
 void killProcess(int procNum) {
     // get the process page table address
-    unsigned char pages[PAGE_COUNT] = {0};
-    unsigned char numPages = 0;
-    unsigned char ppt = processPageTable(procNum);
+    int pages[PAGE_COUNT] = {0};
+    int numPages = 0;
+    int ppt = pptPage(procNum);
 
-    pages[numPages++] = ppt; // page table for the listed process
-    int pptAddr = pageAddress(ppt); // physical address for process page table (proc_num * 256)
-    unsigned char addrValue;
+    pages[numPages++] = ppt;
+    int pptAddr = pageAddress(ppt);
+    int addrValue;
     while ((addrValue = getValue(pptAddr++)) != 0) {
-        // printf("addrValue: %d\n", addrValue);
         pages[numPages++] = addrValue;
     }
     for(int i= 0;i< numPages;i++) {
-        assignPhysicalMemory(freeBit(pages[i]), 0);
-        // printf("pages[%d]: %d\n", i, pages[i]);
+        deallocatePage(freeBit(pages[i]));
     }
     (void)pages;
 }
 
 int verifyProcAndPage(int procNum, int pageCount) {
     int error = 1;
-    if(!(procNum < PAGE_COUNT && procNum >= 0)) {
+    if(!(procNum < PAGE_COUNT)) {
         printf("Requested process %d is not valid. [0-63]\n", procNum);
         error = 0;
     }
-    if(!(pageCount < PAGE_COUNT && pageCount >= 0)) {
+    if(!(pageCount < PAGE_COUNT)) {
         printf("Requested %d pages is not valid. [0-63]\n", pageCount);
         error = 0;
     }
@@ -136,64 +131,43 @@ int isPageTableFull(int addr, int proc) {
     return full;
 }
 
-/*
-    Initialize RAM
-*/
 void initializeMem(void)
 {
     for(int i = 0;i<MEM_SIZE;i++) {
-        assignPhysicalMemory(i, 0);
+        assignMemory(i, 0);
     }
-    assignPhysicalMemory(freeBit(0), 1);
+    assignMemory(freeBit(0), 1);
 }
 
-/*
-    Allocate a virtual page
-
-    Output: Virtual page number, or 0xff if no more virtual pages available
-*/
-unsigned char getVirtualPage(void)
+int getFreePage(void)
 {
     int page = 0xff;
     for(int i=1;i<PAGE_COUNT;i++) {
         if(!mem[i]) {
-            assignPhysicalMemory(i, 1); page = i; break;
+            assignMemory(i, 1); page = i; break;
         }
     }
     return page;
 }
 
-/*
-    Allocate pages for a new process
-
-    This includes the new process page table and pageCount data pages.
-*/
 void newProcess(int procNum, int pageCount)
 {
-    if (!verifyProcAndPage(procNum, pageCount)) {
-        return;
-    }
+    if (!verifyProcAndPage(procNum, pageCount)) return;
 
-    int pageAddr = getVirtualPage();
+    int pageAddr = getFreePage();
     if (isPageTableFull(pageAddr, procNum)) return;
-    assignPhysicalMemory(pageTableAddress(procNum), pageAddr);
+    assignMemory(pageTableAddress(procNum), pageAddr);
     
     for(int i=0;i<pageCount;i++) {
-        int newPage = getVirtualPage();
+        int newPage = getFreePage();
         if (isPageTableFull(newPage, procNum)) return;
-        assignPhysicalMemory(pageAddress(pageAddr)+i ,newPage);
+        assignMemory(pageAddress(pageAddr)+i ,newPage);
     }
 }
 
-/*
-    Print the address map from virtual pages to physical
-*/
-void printPageTable(int procNum)
-{
+void printPageTable(int procNum) {
     printf("--- PROCESS %d PAGE TABLE ---\n", procNum);
-    // Get the page table for this process
-    unsigned char page_table = processPageTable(procNum);
-    // Loop through, printing out used pointers
+    int page_table = pptPage(procNum);
     for (int i = 0; i < PAGE_COUNT; i++) {
         int addr = getPhysicalAddress(page_table, i);
         
@@ -205,12 +179,8 @@ void printPageTable(int procNum)
     }
 }
 
-/*
-    Print the free page map
-*/
-void printPageFreeMap(void)
-{
-    for (int i = 0; i < 64; i++) {
+void printPageFreeMap(void) {
+    for (int i = 0; i < PAGE_COUNT; i++) {
         int addr = getPhysicalAddress(0, i);
 
         printf("%c", mem[addr] == 0? '.': '#');
@@ -219,15 +189,11 @@ void printPageFreeMap(void)
     }
 }
 
-/*
-    Drives the program
-*/
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     assert(PAGE_COUNT * PAGE_SIZE == MEM_SIZE);
 #ifndef TEST
     if (argc == 1) {
-        fprintf(stderr, "usage: ptsim commands\n -> [np] procNum req_pages\n -> [pfm]\n -> [ppt]\n -> [kp] procNum\n -> [st] procNum virt_addr value\n -> [lb] procNum virt_addr\n");
+        fprintf(stderr, "usage: ptsim commands\n -> [np] procNum req_pages\n -> [pfm]\n -> [ppt]\n -> [kp] procNum\n -> [sb] procNum virt_addr value\n -> [lb] procNum virt_addr\n");
         return 1;
     }
     
@@ -250,7 +216,7 @@ int main(int argc, char *argv[])
             int procNum = atoi(argv[++i]);
             killProcess(procNum);
         }
-        else if (strcmp(argv[i], "st") == 0) {
+        else if (strcmp(argv[i], "sb") == 0) {
             int procNum = atoi(argv[++i]);
             int virt_addr = atoi(argv[++i]);
             int value = atoi(argv[++i]);
@@ -264,6 +230,8 @@ int main(int argc, char *argv[])
     }
 #else
 
+    (void)argc;
+    (void)argv;
     /* 
         Unit testing in C ?!?!? Inconceivable! 
     */
@@ -274,17 +242,26 @@ int main(int argc, char *argv[])
     printf("pageTableAddress(17) passed! Value: %d\n", pageTableAddress(17));
     assert(pageAddress(17) == PAGE_SIZE * 17);
     printf("pageAddress(17) passed! Value: %d\n", pageAddress(17));
+
     int procNum = 17;
     int address = 2;
     mem[PAGE_COUNT + procNum] = address;
     mem[address] = 1;
     
-    assert(processPageTable(procNum) == 2);
+    assert(pptPage(procNum) == 2);
     printf("ProcNum: %d Address: %d\n", procNum, address);
-    printf("processPageTable(17) passed! Value: %d\n", processPageTable(17));
+    printf("pptPage(17) passed! Value: %d\n", pptPage(17));
 
-    (void)argv;
-    (void)argc;
+    assert(getVirtualPageNumber(755) == 755 >> 8);
+    printf("getVirtualPageNumber(755) passed! Value: %d\n", getVirtualPageNumber(17));
 
+    mem[0] = 1;
+    mem[81] = 1;
+    mem[256] = 2;
+    mem[257] = 3;
+
+    assert(translateToPhysicalAddress(17, 272) == 784);
+    printf("translateToPhysicalAddress(17, 272) passed! Value: %d\n", translateToPhysicalAddress(17, 272));
+    printf("np 17 2\n mem[81] = 1\nmem[256] = 2\nmem[257] = 3\nphysical address - 528\n");
 #endif
 }
